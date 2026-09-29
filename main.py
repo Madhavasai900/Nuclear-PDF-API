@@ -46,6 +46,10 @@ def home():
     }
 
 @app.get("/api/v1/extract-pdf")
+@app.get("//api/v1/extract-pdf")
+@app.get("/extract-pdf")
+@app.get("//extract-pdf")
+@app.get("/v1/extract-pdf")
 def extract_pdf_data(url: str):
     """
     The Deep RDX Payload.
