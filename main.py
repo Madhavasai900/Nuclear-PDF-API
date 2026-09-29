@@ -45,21 +45,12 @@ def home():
         "trap_status": "$50/month Trap is READY."
     }
 
-@app.get("/api/v1/extract-pdf")
-@app.get("//api/v1/extract-pdf")
-@app.get("/extract-pdf")
-@app.get("//extract-pdf")
-@app.get("/v1/extract-pdf")
-def extract_pdf_data(url: str):
-    """
-    The Deep RDX Payload.
-    Downloads PDF, extracts text, rips hidden metadata, chunks for RAG, and estimates LLM tokens.
-    """
+def process_pdf(url: str):
+    """Core PDF extraction logic"""
     if not url.startswith("http"):
         raise HTTPException(status_code=400, detail="Feed me a valid HTTP/HTTPS link to a PDF.")
         
     try:
-        # 1. Download PDF to Memory
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
         response = requests.get(url, headers=headers, timeout=15)
         
@@ -69,7 +60,6 @@ def extract_pdf_data(url: str):
         pdf_file = io.BytesIO(response.content)
         reader = PdfReader(pdf_file)
         
-        # 2. Rip Hidden Metadata
         meta = reader.metadata
         hidden_data = {
             "author": meta.author if meta and meta.author else "Unknown",
@@ -77,7 +67,6 @@ def extract_pdf_data(url: str):
             "producer": meta.producer if meta and meta.producer else "Unknown"
         }
         
-        # 3. Rip and Clean Text
         total_pages = len(reader.pages)
         full_text = ""
         
@@ -88,9 +77,8 @@ def extract_pdf_data(url: str):
                 
         cleaned_text = full_text.strip()
         
-        # 4. Deep AI Processing (The Money Maker)
         ai_chunks = create_ai_chunks(cleaned_text, chunk_size=1200)
-        estimated_tokens = math.ceil(len(cleaned_text.split()) * 1.3) # Rough LLM token formula
+        estimated_tokens = math.ceil(len(cleaned_text.split()) * 1.3)
                 
         return {
             "status": "success",
@@ -108,3 +96,14 @@ def extract_pdf_data(url: str):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Deep Ghost Mode Error: {str(e)}")
+
+# EXACT ROUTE
+@app.get("/api/v1/extract-pdf")
+def exact_route(url: str):
+    return process_pdf(url)
+
+# GOD MODE: CATCH ALL ROUTE
+# If the user typed ANY path in RapidAPI (like /Extract PDF Text, /pdf, etc), this will catch it!
+@app.get("/{full_path:path}")
+def catch_all_route(full_path: str, url: str):
+    return process_pdf(url)
